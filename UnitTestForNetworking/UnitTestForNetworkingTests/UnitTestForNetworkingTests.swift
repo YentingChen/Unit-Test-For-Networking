@@ -6,6 +6,7 @@
 //
 
 import XCTest
+import Alamofire
 @testable import UnitTestForNetworking
 
 class UnitTestForNetworkingTests: XCTestCase {
@@ -65,7 +66,7 @@ class UnitTestForNetworkingTests: XCTestCase {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [MockURLProtocol.self]
         
-        let urlSession = URLSession(configuration: configuration)
+        let urlSession = Alamofire.Session(configuration: configuration)
         
         mockLoader = APIRequestLoader(apiService: weatherService, urlSession: urlSession)
         

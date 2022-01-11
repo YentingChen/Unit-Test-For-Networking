@@ -6,14 +6,23 @@
 //
 
 import Foundation
+import Alamofire
 
 class APIRequestLoader<T: APIServiceProtocol> {
     
     let apiService: T
     
-    let urlSession: URLSession
+    var urlSession: Alamofire.Session = {
+        
+        let configuration = URLSessionConfiguration.default
+        
+        configuration.urlCache = nil
+        
+        return Session(configuration: configuration)
+        
+    }()
     
-    init(apiService: T, urlSession: URLSession = .shared) {
+    init(apiService: T, urlSession: Alamofire.Session = .default) {
         
         self.apiService = apiService
         
@@ -27,23 +36,26 @@ class APIRequestLoader<T: APIServiceProtocol> {
             
             let urlRequest = try apiService.makeRequest(from: requestData)
             
-            urlSession.dataTask(with: urlRequest) { [weak self] data, response, error in
-                
-                guard let data = data else { return completionHandler((nil, error)) }
-                
-                do {
+            urlSession.request(urlRequest).response { response in
+                switch response.result {
                     
-                    guard let parseResponse = try self?.apiService.parseResponse(from: data) else { return completionHandler((nil, nil)) }
+                case .success:
+                    guard let data = response.data else { return completionHandler((nil, nil)) }
                     
-                    completionHandler((parseResponse, nil))
+                    do {
+                        
+                        let response = try self.apiService.parseResponse(from: data)
+                        completionHandler((response, nil))
+                        
+                    } catch {
+                        
+                        completionHandler((nil, error))
+                    }
                     
-                } catch {
-                    
+                case .failure(let error):
                     completionHandler((nil, error))
-                    
                 }
-                
-            }.resume()
+            }
             
         } catch {
             
